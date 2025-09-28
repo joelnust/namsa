@@ -81,9 +81,10 @@ const ArtistDocuments: React.FC = () => {
       const docs = await artistAPI.getDocuments();
       setDocuments(docs);
     } catch (error: any) {
+      console.error('Document upload error:', error);
       toast({
         title: "Upload Failed",
-        description: error?.response?.data?.message || `Failed to upload ${uploadData.title}`,
+        description: error?.response?.data?.message || error?.message || `Failed to upload ${uploadData.title}`,
         variant: "destructive",
       });
     } finally {

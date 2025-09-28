@@ -27,8 +27,8 @@ const ArtistUpload: React.FC = () => {
     const loadData = async () => {
       try {
         // Load profile
-        const p = await artistAPI.getProfile();
-        setProfile(p);
+        const docs = await artistAPI.getDocuments();
+        setProfile(docs.memberDetails);
 
         // Load lookups
         const [uploadTypes, workTypes] = await Promise.all([
@@ -52,7 +52,7 @@ const ArtistUpload: React.FC = () => {
         const payload = JSON.parse(e.newValue || '{}');
         if (payload?.type === 'profile' && payload.userId) {
           // If the update concerns this user, reload profile
-          artistAPI.getProfile().then(setProfile).catch(() => {});
+          artistAPI.getDocuments().then(data => setProfile(data.memberDetails)).catch(() => {});
           toast({ title: 'Profile Status Updated', description: 'Your profile status was updated by an admin.' });
         }
       } catch (err) {}
@@ -93,9 +93,10 @@ const ArtistUpload: React.FC = () => {
         description: "Your music has been uploaded successfully!",
       });
     } catch (error: any) {
+      console.error('Music upload error:', error);
       toast({
         title: "Upload Failed",
-        description: error?.response?.data?.message || "Failed to upload music",
+        description: error?.response?.data?.message || error?.message || "Failed to upload music",
         variant: "destructive",
       });
     } finally {

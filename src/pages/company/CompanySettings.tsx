@@ -46,6 +46,11 @@ const CompanySettings: React.FC = () => {
     try {
       setSaving(true);
       await companyAPI.updateProfile(profile);
+      
+      // Reload profile data
+      const updatedData = await companyAPI.getProfile();
+      setProfile(updatedData);
+      
       toast({
         title: "Success",
         description: "Company profile updated successfully",
@@ -54,7 +59,7 @@ const CompanySettings: React.FC = () => {
       console.error('Failed to update profile:', error);
       toast({
         title: "Error",
-        description: "Failed to update company profile",
+        description: error?.response?.data?.message || "Failed to update company profile",
         variant: "destructive",
       });
     } finally {

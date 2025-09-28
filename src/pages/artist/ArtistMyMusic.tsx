@@ -136,9 +136,10 @@ const ArtistMyMusic: React.FC = () => {
       const data = await artistAPI.getMyMusic().catch(() => []);
       setRows(data);
     } catch (error: any) {
+      console.error('Music update error:', error);
       toast({
         title: 'Update Failed',
-        description: error?.response?.data?.message || 'Failed to update music',
+        description: error?.response?.data?.message || error?.message || 'Failed to update music',
         variant: 'destructive',
       });
     } finally {
@@ -157,9 +158,10 @@ const ArtistMyMusic: React.FC = () => {
       });
       setRows(prev => prev.filter(r => r.id !== music.id));
     } catch (error: any) {
+      console.error('Music delete error:', error);
       toast({
         title: "Delete Failed",
-        description: error?.response?.data?.message || "Failed to delete music",
+        description: error?.response?.data?.message || error?.message || "Failed to delete music",
         variant: "destructive",
       });
     }

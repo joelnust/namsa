@@ -19,15 +19,27 @@ const ArtistPaymentForm: React.FC = () => {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.artistName || !form.artistId) {
+      toast({ title: 'Please fill required fields (Artist Name and ID)', variant: 'destructive' });
+      return;
+    }
     setSubmitting(true);
     try {
-      if (!recipientEmail) throw new Error('Recipient email is required');
+      if (!recipientEmail) {
+        toast({ title: 'Recipient email is required', variant: 'destructive' });
+        return;
+      }
       await invoiceAPI.sendArtistPayment(form, recipientEmail);
       toast({ title: 'Members payment report sent' });
       setForm({});
       setRecipientEmail('');
     } catch (err: any) {
-      toast({ title: 'Failed to send payment', description: err?.message || 'Please check fields', variant: 'destructive' });
+      console.error('Payment send error:', err);
+      toast({ 
+        title: 'Failed to send payment', 
+        description: err?.response?.data?.message || err?.message || 'Please check all fields and try again', 
+        variant: 'destructive' 
+      });
     } finally {
       setSubmitting(false);
     }

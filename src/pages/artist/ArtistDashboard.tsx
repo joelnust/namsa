@@ -40,7 +40,7 @@ const ArtistDashboard: React.FC = () => {
         setLoading(true);
         const [musicData, profileData] = await Promise.all([
           artistAPI.getMyMusic().catch(() => []),
-          artistAPI.getProfile().catch(() => null),
+          artistAPI.getDocuments().then(data => data.memberDetails).catch(() => null),
         ]);
 
         // Compute stats from lists
@@ -192,11 +192,11 @@ const ArtistDashboard: React.FC = () => {
     
     const requiredFields = [
       profile.firstName,
-      profile.lastName,
+      profile.surname,
       profile.email,
       profile.phoneNumber,
-      profile.address,
-      profile.dateOfBirth,
+      profile.line1,
+      profile.birthDate,
       profile.placeOfBirth,
       profile.nationality,
     ];

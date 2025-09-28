@@ -19,15 +19,27 @@ const InvoiceForm: React.FC = () => {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.invoiceDate || !form.invoiceServiceType) {
+      toast({ title: 'Please fill required fields', variant: 'destructive' });
+      return;
+    }
     setSubmitting(true);
     try {
-      if (!clientEmail) throw new Error('Client email is required');
+      if (!clientEmail) {
+        toast({ title: 'Client email is required', variant: 'destructive' });
+        return;
+      }
       await invoiceAPI.sendInvoice(form, clientEmail);
       toast({ title: 'Invoice sent' });
       setForm({});
       setClientEmail('');
     } catch (err: any) {
-      toast({ title: 'Failed to send invoice', description: err?.message || 'Please check fields', variant: 'destructive' });
+      console.error('Invoice send error:', err);
+      toast({ 
+        title: 'Failed to send invoice', 
+        description: err?.response?.data?.message || err?.message || 'Please check all fields and try again', 
+        variant: 'destructive' 
+      });
     } finally {
       setSubmitting(false);
     }

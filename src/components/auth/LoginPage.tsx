@@ -76,13 +76,17 @@ const LoginPage: React.FC = () => {
       console.error('Auth error:', error);
       // Detect wrong credentials
       const status = error?.response?.status;
-      if (status === 401) {
+      if (status === 401 || status === 403) {
         setMessageTitle('Wrong credentials');
         setMessageBody('Wrong password or username. Please try again.');
         setMessageDialogOpen(true);
-      } else if (registerMode && status === 400) {
+      } else if (registerMode && (status === 400 || status === 403)) {
         setMessageTitle('Sign up failed');
         setMessageBody(error?.response?.data?.message || 'Failed to register.');
+        setMessageDialogOpen(true);
+      } else {
+        setMessageTitle('Error');
+        setMessageBody(error?.response?.data?.message || error?.message || 'An error occurred. Please try again.');
         setMessageDialogOpen(true);
       }
     } finally {

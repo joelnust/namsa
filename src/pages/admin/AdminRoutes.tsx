@@ -18,6 +18,7 @@ import type { Company, Admin as AdminType, ArtistWork, LogSheet, MemberDetails, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit, Trash2, Play, Download, Eye, Music } from 'lucide-react';
+import { statusAPI } from '@/services/api';
 import InvoiceForm from './InvoiceForm';
 import ArtistPaymentForm from './ArtistPaymentForm';
 
@@ -1017,12 +1018,24 @@ const ArtistsList: React.FC = () => {
   const [selectedProfile, setSelectedProfile] = React.useState<MemberDetails | null>(null);
   const [profileDetails, setProfileDetails] = React.useState<any>(null);
   const [viewOpen, setViewOpen] = React.useState(false);
+  const [editStatusOpen, setEditStatusOpen] = React.useState(false);
+  const [editingProfile, setEditingProfile] = React.useState<MemberDetails | null>(null);
+  const [newStatusId, setNewStatusId] = React.useState<string>('');
+  const [statuses, setStatuses] = React.useState<any[]>([]);
+  const [updatingStatus, setUpdatingStatus] = React.useState(false);
+  const { toast } = useToast();
 
   const reload = React.useCallback(() => {
     setLoading(true);
     adminAPI.getAllProfiles().then(setRows).catch(() => setRows([])).finally(() => setLoading(false));
   }, []);
-  React.useEffect(() => { reload(); }, [reload]);
+  
+  React.useEffect(() => { 
+    reload(); 
+    // Load statuses for editing
+    statusAPI.getAllStatuses().then(setStatuses).catch(() => setStatuses([]));
+  }, [reload]);
+  
   const cols: Column<MemberDetails>[] = [
     { key: 'firstName', header: 'First Name', accessor: 'firstName', sortable: true },
     { key: 'surname', header: 'Surname', accessor: (r) => r.surname || '-' },
@@ -1046,6 +1059,36 @@ const ArtistsList: React.FC = () => {
       setProfileDetails(details);
     } catch (err) {
       // ignore
+    }
+  };
+
+  const handleEditStatus = (profile: MemberDetails) => {
+    setEditingProfile(profile);
+    setNewStatusId((profile.status?.id || '').toString());
+    setEditStatusOpen(true);
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!editingProfile || !newStatusId) {
+      toast({ title: 'Please select a status', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      setUpdatingStatus(true);
+      await adminAPI.updateProfileStatus(editingProfile.id, parseInt(newStatusId));
+      toast({ title: 'Profile status updated successfully' });
+      setEditStatusOpen(false);
+      setEditingProfile(null);
+      reload();
+    } catch (error: any) {
+      toast({ 
+        title: 'Failed to update status', 
+        description: error?.response?.data?.message || 'Please try again',
+        variant: 'destructive' 
+      });
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -1074,7 +1117,16 @@ const ArtistsList: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable data={filtered} columns={cols} loading={loading} emptyMessage="No Members found" actions={[{ label: 'View Profile', onClick: handleView }]} />
+          <DataTable 
+            data={filtered} 
+            columns={cols} 
+            loading={loading} 
+            emptyMessage="No Members found" 
+            actions={[
+              { label: 'View Profile', onClick: handleView },
+              { label: 'Edit Status', onClick: handleEditStatus, variant: 'warning' as const },
+            ]} 
+          />
         </CardContent>
       </Card>
 
@@ -1166,6 +1218,56 @@ const ArtistsList: React.FC = () => {
 
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Status Dialog */}
+      <Dialog open={editStatusOpen} onOpenChange={setEditStatusOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Profile Status</DialogTitle>
+            <DialogDescription>
+              Change the approval status for {editingProfile?.firstName} {editingProfile?.surname}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="font-medium">{editingProfile?.firstName} {editingProfile?.surname}</p>
+              <p className="text-sm text-muted-foreground">{editingProfile?.email}</p>
+              <p className="text-sm text-muted-foreground">
+                Current Status: {editingProfile?.status?.statusName || editingProfile?.status?.status || 'PENDING'}
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="newStatus">New Status</Label>
+              <Select value={newStatusId} onValueChange={setNewStatusId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select new status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((status) => (
+                    <SelectItem key={status.id} value={status.id.toString()}>
+                      {status.statusName || status.status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditStatusOpen(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdateStatus} 
+                disabled={updatingStatus || !newStatusId}
+                className="flex-1"
+              >
+                {updatingStatus ? 'Updating...' : 'Update Status'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

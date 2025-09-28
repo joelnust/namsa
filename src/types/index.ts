@@ -511,3 +511,24 @@ export interface LicenseApplicationForm {
   buildingName?: string;
   unitNoOrShop?: string;
 }
+
+// Additional lookup types
+export interface BankName {
+  id: number;
+  bankName: string;
+}
+
+export interface MaritalStatus {
+  id: number;
+  statusName: string;
+}
+
+export interface MemberCategory {
+  id: number;
+  categoryName: string;
+}
+
+export interface Gender {
+  id: number;
+  genderName: string;
+}

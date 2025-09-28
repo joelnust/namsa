@@ -61,10 +61,13 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  // Do not attach auth header for public auth endpoints
+  // Only exclude auth header for specific public endpoints
   const url = `${config.baseURL || ''}${config.url || ''}`;
-  const isAuthEndpoint = /\/api\/auth\//.test(url);
-  if (token && !isAuthEndpoint) {
+  const isPublicEndpoint = /\/api\/auth\/(login|register|verify|forgot-password|reset-password)/.test(url) ||
+                          /\/api\/(passportphoto|proofofpayment|bankconfirmationletter|iddocument|music)\/view\//.test(url) ||
+                          /\/api\/(invoices|legalentity|naturalperson)\//.test(url);
+  
+  if (token && !isPublicEndpoint) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -322,7 +325,13 @@ export const artistAPI = {
 
   // Additional methods for profile management
   getProfile: async (): Promise<MemberDetails> => {
-    const response = await api.get('/api/artist/profile');
+    const response = await api.get('/api/artist/documentsandprofile');
+    return response.data.memberDetails || response.data;
+  },
+
+  // Get profile only (without documents)
+  getProfileOnly: async (): Promise<MemberDetails> => {
+    const response = await api.get('/api/artist2/getprofilebyuser');
     return response.data;
   },
 
@@ -339,7 +348,7 @@ export const artistAPI = {
     delete payload.genderId;
     delete payload.bankNameId;
 
-    const response = await api.put('/api/artist/profile', payload);
+    const response = await api.put('/api/artist2/updateprofilebyuser', payload);
     return response.data;
   },
 
@@ -396,7 +405,52 @@ export const artistAPI = {
   },
 
   getStats: async (): Promise<ArtistStats> => {
-    const response = await api.get('/api/artist/stats');
+    // Calculate stats from music data since no dedicated endpoint exists
+    const music = await artistAPI.getMyMusic();
+    const approved = music.filter(m => (m.status?.statusName || (m as any).status?.status) === 'APPROVED').length;
+    const pending = music.filter(m => (m.status?.statusName || (m as any).status?.status) === 'PENDING').length;
+    const rejected = music.filter(m => (m.status?.statusName || (m as any).status?.status) === 'REJECTED').length;
+    
+    return {
+      totalUploads: music.length,
+      totalUploaded: music.length,
+      approvedMusic: approved,
+      totalApproved: approved,
+      pendingMusic: pending,
+      totalPending: pending,
+      rejectedMusic: rejected,
+      totalRejected: rejected,
+      totalPlays: 0,
+      totalDownloads: 0,
+      recentActivity: [],
+    } as ArtistStats;
+  },
+};
+
+// Status API for admin status management
+export const statusAPI = {
+  getAllStatuses: async (): Promise<Status[]> => {
+    const response = await api.get('/api/statuses');
+    return response.data;
+  },
+
+  getStatusById: async (id: number): Promise<Status> => {
+    const response = await api.get(`/api/statuses/${id}`);
+    return response.data;
+  },
+
+  createStatus: async (status: Partial<Status>): Promise<Status> => {
+    const response = await api.post('/api/statuses', status);
+    return response.data;
+  },
+
+  updateStatus: async (id: number, status: Partial<Status>): Promise<Status> => {
+    const response = await api.put(`/api/statuses/${id}`, status);
+    return response.data;
+  },
+
+  deleteStatus: async (id: number): Promise<void> => {
+    await api.delete(`/api/statuses/${id}`);
     return response.data;
   },
 };
@@ -439,8 +493,27 @@ export const companyAPI = {
   },
 
   getStats: async (): Promise<CompanyStats> => {
-    const response = await api.get('/api/company/stats');
-    return response.data;
+    // Calculate stats from available data since no dedicated endpoint exists
+    const [music, logSheets] = await Promise.all([
+      companyAPI.getApprovedMusic().catch(() => []),
+      companyAPI.getLogSheets().catch(() => []),
+    ]);
+    
+    const activeArtists = new Set(music.map((m: any) => m.artist || m.user?.email)).size;
+    
+    return {
+      approvedMusicCount: music.length,
+      logSheetsCount: logSheets.length,
+      activeArtists,
+      totalTracksUsed: 0,
+      totalMusicSelected: 0,
+      totalSpent: 0,
+      recentActivity: [],
+      totalLogSheets: logSheets.length,
+      totalMusicUsed: 0,
+      activeArtistsCount: activeArtists,
+      approvedMusicLibrary: music.length,
+    } as CompanyStats;
   },
 };
 
@@ -619,7 +692,37 @@ export const adminAPI = {
 
   // Statistics
   getDashboardStats: async (): Promise<DashboardStats> => {
-    const response = await api.get('/api/admin/stats');
+    // Calculate stats from available data since no dedicated endpoint exists
+    const [users, music, companies, admins, logSheets, pendingProfiles, pendingMusic, allProfiles] = await Promise.all([
+      adminAPI.getAllUsers().catch(() => []),
+      adminAPI.getAllMusic().catch(() => []),
+      adminAPI.getAllCompanies().catch(() => []),
+      adminAPI.getAllAdmins().catch(() => []),
+      adminAPI.getAllLogSheets().catch(() => []),
+      adminAPI.getPendingProfiles().catch(() => []),
+      adminAPI.getPendingMusic().catch(() => []),
+      adminAPI.getAllProfiles().catch(() => []),
+    ]);
+
+    return {
+      totalUsers: users.length,
+      totalArtists: users.filter((u: any) => u.role === 'ARTIST').length,
+      totalCompanies: users.filter((u: any) => u.role === 'COMPANY').length,
+      totalMusic: music.length,
+      approvedMusic: music.filter((m: any) => (m.status?.statusName || m.status?.status) === 'APPROVED').length,
+      pendingMusic: pendingMusic.length,
+      rejectedMusic: music.filter((m: any) => (m.status?.statusName || m.status?.status) === 'REJECTED').length,
+      totalLogSheets: logSheets.length,
+      pendingProfiles: pendingProfiles.length,
+      approvedProfiles: allProfiles.filter((p: any) => (p.status?.statusName || p.status?.status) === 'APPROVED').length,
+      rejectedProfiles: allProfiles.filter((p: any) => (p.status?.statusName || p.status?.status) === 'REJECTED').length,
+      recentActivity: [],
+    } as DashboardStats;
+  },
+
+  // Update profile status
+  updateProfileStatus: async (profileId: number, statusId: number): Promise<MemberDetails> => {
+    const response = await api.put(`/api/admin/profile/status/${profileId}`, { statusId });
     return response.data;
   },
 };
