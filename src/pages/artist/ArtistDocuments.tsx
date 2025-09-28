@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { artistAPI } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Eye, Edit, FileText, Image, CheckCircle } from 'lucide-react';
+import { Upload, Eye, CreditCard as Edit, FileText, Image, CircleCheck as CheckCircle } from 'lucide-react';
 
 const ArtistDocuments: React.FC = () => {
   const [currentUploads, setCurrentUploads] = useState<Record<string, { file: File | null; title: string }>>({

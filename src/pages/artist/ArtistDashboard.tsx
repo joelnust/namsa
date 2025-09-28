@@ -6,21 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import {
-  Music,
-  Upload,
-  CheckCircle,
-  Clock,
-  XCircle,
-  TrendingUp,
-  Download,
-  Play,
-  Eye,
-  Edit,
-  BarChart3,
-  User,
-  FileText,
-} from 'lucide-react';
+import { Music, Upload, CircleCheck as CheckCircle, Clock, Circle as XCircle, TrendingUp, Download, Play, Eye, CreditCard as Edit, ChartBar as BarChart3, User, FileText } from 'lucide-react';
 import { artistAPI } from '@/services/api';
 import { ArtistWork, ArtistStats, MemberDetails } from '@/types';
 import { useToast } from '@/hooks/use-toast';

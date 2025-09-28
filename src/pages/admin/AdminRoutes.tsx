@@ -17,7 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import type { Company, Admin as AdminType, ArtistWork, LogSheet, MemberDetails, Invoice, ArtistInvoiceReports, User } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Play, Download, Eye, Music } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, Play, Download, Eye, Music } from 'lucide-react';
 import { statusAPI } from '@/services/api';
 import InvoiceForm from './InvoiceForm';
 import ArtistPaymentForm from './ArtistPaymentForm';
